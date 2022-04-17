@@ -7,6 +7,9 @@ const logger = require('morgan');
 const sassMiddleware = require('node-sass-middleware');
 const serveFavicon = require('serve-favicon');
 const baseRouter = require('./routes/base');
+const expressSession = require('express-session');
+const MongoStore = require('connect-mongo');
+const deserializeUser = require('./middlewares/deserialize-user');
 
 const app = express();
 
@@ -28,6 +31,23 @@ app.use(
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(logger('dev'));
 app.use(express.urlencoded({ extended: true }));
+
+app.use(
+  expressSession({
+    secret: 'agargagaweg',
+    saveUninitialized: false,
+    resave: false,
+    cookie: {
+      maxAge: 15 * 24 * 60 * 60 * 1000 // 15 days (to miliseconds).
+    },
+    store: MongoStore.create({
+      mongoUrl: 'mongodb://localhost:27017/node-basic-authentication',
+      ttl: 60 * 60 // 60 minutes (to seconds) before connection is refreshed.
+    })
+  })
+);
+
+app.use(deserializeUser);
 
 app.use('/', baseRouter);
 
